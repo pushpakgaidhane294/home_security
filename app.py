@@ -110,7 +110,7 @@ with col1:
 
     st.plotly_chart(fig_3d, use_container_width=True)
 
-    # 2D Activity Heatmap (kept for comparison)
+    # 2D Activity Heatmap
     st.subheader("📊 Activity Heatmap (2D View)")
     rooms = ["Living Room", "Bedroom", "Kitchen", "Front Door", "Backyard"]
     heat_values = np.random.randint(20, 100, len(rooms))
@@ -119,7 +119,7 @@ with col1:
                       color_continuous_scale=["#00f5ff", "#ff004c"])
     st.plotly_chart(fig_heat, use_container_width=True)
 
-    # Timeline Replay (Bottom Panel)
+    # Timeline Replay
     st.subheader("📈 Timeline & Replay")
     hours = pd.date_range(datetime.now() - timedelta(hours=24), periods=24, freq='H')
     events = np.random.randint(0, 10, 24)
@@ -142,19 +142,19 @@ with col2:
             for a in alerts:
                 color = "#ff4d4d" if a["Threat"] == "High" else "#ffaa00" if a["Threat"] == "Medium" else "#00ffcc"
                 st.markdown(
-                    f"""
-                    <div style="background-color:#111;padding:10px;border-radius:10px;margin-bottom:10px;">
-                        <b style="color:{color}">[{a['Threat']}]</b> {a['Title']}  
-                        <br><small>🕒 {a['Time']} | 📍 {a['Location']}</small>
-                        <br>{a['Description']}
-                        <div style="margin-top:8px;">
-                            <button style="background:#2563eb;color:white;border:none;padding:4px 8px;border-radius:5px;margin-right:4px;">Verify</button>
-                            <button style="background:#374151;color:white;border:none;padding:4px 8px;border-radius:5px;">Ignore</button>
-                        </div>
-                    </div>
-                    """,
+                    f"<div style='background-color:#111;padding:10px;border-radius:10px;margin-bottom:10px;'>"
+                    f"<b style='color:{color}'>[{a['Threat']}]</b> {a['Title']}<br>"
+                    f"<small>🕒 {a['Time']} | 📍 {a['Location']}</small><br>"
+                    f"{a['Description']}</div>",
                     unsafe_allow_html=True,
                 )
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if st.button(f"✅ Verify - {a['Title']}", key=f"verify_{a['Time']}"):
+                        st.success(f"Verified: {a['Title']} ({a['Location']})")
+                with col_btn2:
+                    if st.button(f"🚫 Ignore - {a['Title']}", key=f"ignore_{a['Time']}"):
+                        st.warning(f"Ignored: {a['Title']} ({a['Location']})")
         time.sleep(1)
 
 # ---------- Analytics Section ----------
@@ -196,10 +196,17 @@ map_data = pd.DataFrame({
     "lon": [72.87 + random.uniform(-0.01, 0.01) for _ in range(10)],
     "ThreatLevel": np.random.randint(20, 100, 10)
 })
-fig_map = px.density_mapbox(map_data, lat='lat', lon='lon', z='ThreatLevel', radius=20,
-                            center=dict(lat=19.07, lon=72.87), zoom=12,
-                            mapbox_style="stamen-toner",
-                            title="Neighborhood Threat Heatmap")
+fig_map = px.density_mapbox(
+    map_data,
+    lat='lat',
+    lon='lon',
+    z='ThreatLevel',
+    radius=25,
+    center=dict(lat=19.07, lon=72.87),
+    zoom=12,
+    mapbox_style="open-street-map",
+    title="Neighborhood Threat Heatmap"
+)
 st.plotly_chart(fig_map, use_container_width=True)
 
 st.success("✅ SentinelSphere AI Dashboard Simulation Running Successfully!")
