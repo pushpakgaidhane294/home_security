@@ -17,7 +17,6 @@ st.title("🧠 SentinelSphere — AI-Powered Home Security Dashboard")
 # ---------- Sidebar: Controls & AI Insights ----------
 st.sidebar.title("🧠 AI Insights & Controls")
 
-# Simulated AI Security Score
 security_score = random.randint(60, 95)
 st.sidebar.metric("Daily Security Score", f"{security_score}/100")
 st.sidebar.progress(security_score)
@@ -65,19 +64,59 @@ col1, col2 = st.columns([2, 1])
 
 # ---------- Digital Twin / Home View ----------
 with col1:
-    st.subheader("🏠 Home Digital Twin — 2D View")
+    st.subheader("🏠 Home Digital Twin — 3D View")
 
+    # 3D coordinates for rooms
+    rooms_3d = [
+        {"Room": "Living Room", "x": 0, "y": 0, "z": 0},
+        {"Room": "Kitchen", "x": 4, "y": 0, "z": 0},
+        {"Room": "Bedroom", "x": 0, "y": 4, "z": 0},
+        {"Room": "Front Door", "x": 4, "y": 4, "z": 0},
+        {"Room": "Backyard", "x": 2, "y": 2, "z": -1},
+    ]
+    df_3d = pd.DataFrame(rooms_3d)
+    df_3d["Activity"] = np.random.randint(40, 100, len(df_3d))
+
+    fig_3d = go.Figure(data=[
+        go.Scatter3d(
+            x=df_3d["x"],
+            y=df_3d["y"],
+            z=df_3d["z"],
+            mode='markers+text',
+            text=df_3d["Room"],
+            textposition="top center",
+            marker=dict(
+                size=14,
+                color=df_3d["Activity"],
+                colorscale="Turbo",
+                opacity=0.9,
+                colorbar=dict(title="Activity Level")
+            )
+        )
+    ])
+
+    fig_3d.update_layout(
+        title="3D Digital Twin — Interactive Home Layout",
+        scene=dict(
+            xaxis_title='Width',
+            yaxis_title='Depth',
+            zaxis_title='Height',
+            bgcolor='black'
+        ),
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
+        height=500
+    )
+
+    st.plotly_chart(fig_3d, use_container_width=True)
+
+    # 2D Activity Heatmap (kept for comparison)
+    st.subheader("📊 Activity Heatmap (2D View)")
     rooms = ["Living Room", "Bedroom", "Kitchen", "Front Door", "Backyard"]
     heat_values = np.random.randint(20, 100, len(rooms))
-
-    df_heat = pd.DataFrame({
-        "Room": rooms,
-        "Activity Score": heat_values
-    })
-
+    df_heat = pd.DataFrame({"Room": rooms, "Activity Score": heat_values})
     fig_heat = px.bar(df_heat, x="Room", y="Activity Score", color="Activity Score",
-                      color_continuous_scale=["#00f5ff", "#ff004c"],
-                      title="Activity Heatmap (Last Hour)")
+                      color_continuous_scale=["#00f5ff", "#ff004c"])
     st.plotly_chart(fig_heat, use_container_width=True)
 
     # Timeline Replay (Bottom Panel)
