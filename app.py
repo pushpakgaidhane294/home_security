@@ -21,11 +21,20 @@ security_score = random.randint(60, 95)
 st.sidebar.metric("Daily Security Score", f"{security_score}/100")
 st.sidebar.progress(security_score)
 
-st.sidebar.markdown("**Routine Patterns Learned:**")
-st.sidebar.text("🕒 Sleep: 11PM – 7AM")
-st.sidebar.text("📱 Phone away: 8AM – 6PM")
-st.sidebar.text("🏠 Empty home: 9AM – 5PM")
+# ---------- Custom Routine Setup ----------
+st.sidebar.markdown("**🏠 Custom Daily Routine Setup**")
 
+sleep_time = st.sidebar.time_input("🛌 Sleep Start", value=datetime.strptime("23:00", "%H:%M").time())
+wake_time = st.sidebar.time_input("🌅 Wake Up", value=datetime.strptime("07:00", "%H:%M").time())
+work_start = st.sidebar.time_input("💻 Leave Home / Work Start", value=datetime.strptime("09:00", "%H:%M").time())
+work_end = st.sidebar.time_input("🏠 Return Home", value=datetime.strptime("17:00", "%H:%M").time())
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("**📋 Current Routine Summary:**")
+st.sidebar.text(f"🕒 Sleep: {sleep_time.strftime('%I:%M %p')} – {wake_time.strftime('%I:%M %p')}")
+st.sidebar.text(f"💼 Away: {work_start.strftime('%I:%M %p')} – {work_end.strftime('%I:%M %p')}")
+
+# ---------- Predictions ----------
 predictions = {
     "Door Access Anomaly": "30%",
     "Cyber Intrusion Risk": "15%",
@@ -34,6 +43,7 @@ st.sidebar.markdown("**Predicted Threats (Next 24h):**")
 for k, v in predictions.items():
     st.sidebar.text(f"• {k}: {v}")
 
+# ---------- Automation ----------
 st.sidebar.markdown("**Automation Shortcuts:**")
 st.sidebar.checkbox("🔔 Auto-notify neighbor")
 st.sidebar.checkbox("🤫 Enable silent mode")
