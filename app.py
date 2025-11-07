@@ -1,353 +1,166 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
 import numpy as np
-from streamlit_autorefresh import st_autorefresh
+import random
+import time
+from datetime import datetime, timedelta
+import plotly.express as px
+import plotly.graph_objects as go
 
-# ---------- Backend functions (device and alert simulation) -----------
-def get_devices():
-    np.random.seed()
-    return [
-        {"id": 1, "name": "Front Door Camera", "type": "camera", "status": np.random.choice(["active", "inactive"], p=[0.8, 0.2]), "location": "Front Entrance", "battery": np.random.randint(70, 100)},
-        {"id": 2, "name": "Motion Sensor - Living Room", "type": "sensor", "status": "active", "location": "Living Room", "battery": np.random.randint(80, 100)},
-        {"id": 3, "name": "Smart Lock - Main Door", "type": "lock", "status": "active", "location": "Main Door", "battery": np.random.randint(50, 90)},
-        {"id": 4, "name": "Window Sensor - Bedroom", "type": "sensor", "status": np.random.choice(["active", "inactive"], p=[0.7, 0.3]), "location": "Bedroom", "battery": np.random.randint(30, 60)},
-        {"id": 5, "name": "Garage Camera", "type": "camera", "status": "active", "location": "Garage", "battery": np.random.randint(90, 100)},
-        {"id": 6, "name": "Back Door Sensor", "type": "sensor", "status": "active", "location": "Back Door", "battery": np.random.randint(60, 79)},
+# =========================================
+# SENTINELSPHERE — STREAMLIT DASHBOARD
+# =========================================
+
+st.set_page_config(page_title="SentinelSphere Dashboard", layout="wide")
+st.title("🧠 SentinelSphere — AI-Powered Home Security Dashboard")
+
+# ---------- Sidebar: Controls & AI Insights ----------
+st.sidebar.title("🧠 AI Insights & Controls")
+
+# Simulated AI Security Score
+security_score = random.randint(60, 95)
+st.sidebar.metric("Daily Security Score", f"{security_score}/100")
+st.sidebar.progress(security_score)
+
+st.sidebar.markdown("**Routine Patterns Learned:**")
+st.sidebar.text("🕒 Sleep: 11PM – 7AM")
+st.sidebar.text("📱 Phone away: 8AM – 6PM")
+st.sidebar.text("🏠 Empty home: 9AM – 5PM")
+
+predictions = {
+    "Door Access Anomaly": "30%",
+    "Cyber Intrusion Risk": "15%",
+}
+st.sidebar.markdown("**Predicted Threats (Next 24h):**")
+for k, v in predictions.items():
+    st.sidebar.text(f"• {k}: {v}")
+
+st.sidebar.markdown("**Automation Shortcuts:**")
+st.sidebar.checkbox("🔔 Auto-notify neighbor")
+st.sidebar.checkbox("🤫 Enable silent mode")
+st.sidebar.checkbox("🎥 Auto-record if threat > 80")
+
+# ---------- Simulated Live Data ----------
+def generate_alert():
+    titles = [
+        "Unusual Wi-Fi signal near window",
+        "Door opened unexpectedly",
+        "Motion detected in living room",
+        "New device joined the network",
+        "High noise level detected"
     ]
-
-def get_alerts():
-    now = datetime.now()
-    return [
-        {"id": 1, "type": "warning", "message": "Motion detected at Front Entrance", "timestamp": now - timedelta(minutes=5), "severity": "medium"},
-        {"id": 2, "type": "critical", "message": "Unauthorized access attempt at Main Door", "timestamp": now - timedelta(minutes=15), "severity": "high"},
-        {"id": 3, "type": "info", "message": "Battery low on Window Sensor - Bedroom", "timestamp": now - timedelta(hours=1), "severity": "low"},
-    ]
-
-def get_activity_log():
-    np.random.seed()
-    events = []
-    now = datetime.now()
-    for i in range(20):
-        events.append({
-            "timestamp": now - timedelta(minutes=i*10),
-            "device": np.random.choice(["Front Door Camera", "Motion Sensor", "Smart Lock"]),
-            "event": np.random.choice(["Motion Detected", "Door Opened", "Access Granted", "Battery Warning"]),
-            "status": np.random.choice(["success", "warning", "error"])
-        })
-    return events
-
-# -----------------------------------------------------------------------
-
-# Page Configuration
-st.set_page_config(
-    page_title="SentinelSphere - IoT Security Dashboard",
-    page_icon="🛡️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# Custom CSS for dark UI
-st.markdown("""
-<style>
-    .main {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    locations = ["Living Room", "Bedroom", "Kitchen", "Front Door", "Backyard"]
+    threat = random.choice(["Low", "Medium", "High"])
+    title = random.choice(titles)
+    return {
+        "Time": datetime.now().strftime("%I:%M:%S %p"),
+        "Title": title,
+        "Location": random.choice(locations),
+        "Threat": threat,
+        "Description": f"{title} in {locations[random.randint(0,4)]}. Threat level: {threat}."
     }
-    .stMetric { background: rgba(30, 41, 59, 0.7); padding: 20px; border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.3); }
-    .stAlert { border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.5); }
-    h1, h2, h3 { color: #60a5fa !important; font-family: 'Orbitron', sans-serif; }
-    .metric-card { background: rgba(30, 41, 59, 0.7); padding: 20px; border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.3); }
-</style>
-""", unsafe_allow_html=True)
 
-# Refresh interval: every 5 seconds
-count = st_autorefresh(interval=5000, limit=None, key="refresh")
+# ---------- Layout ----------
+col1, col2 = st.columns([2, 1])
 
-# Generate fresh/fake data on every refresh
-st.session_state.devices = get_devices()
-st.session_state.alerts = get_alerts()
-st.session_state.activity_log = get_activity_log()
+# ---------- Digital Twin / Home View ----------
+with col1:
+    st.subheader("🏠 Home Digital Twin — 2D View")
 
-# Sidebar navigation & system status
-with st.sidebar:
-    st.title("🛡️ SentinelSphere")
-    st.markdown("---")
-    page = st.radio(
-        "Navigation",
-        ["Dashboard", "Devices", "Analytics", "Alerts", "Settings"],
-        index=0
-    )
-    st.markdown("---")
-    st.subheader("System Status")
-    st.metric("Active Devices", len([d for d in st.session_state.devices if d['status'] == 'active']))
-    st.metric("Alerts Today", len(st.session_state.alerts))
-    st.metric("System Health", "98%", delta="2%")
-    st.markdown("---")
-    st.caption("Last updated: " + datetime.now().strftime("%H:%M:%S"))
+    rooms = ["Living Room", "Bedroom", "Kitchen", "Front Door", "Backyard"]
+    heat_values = np.random.randint(20, 100, len(rooms))
 
-# Pages
+    df_heat = pd.DataFrame({
+        "Room": rooms,
+        "Activity Score": heat_values
+    })
 
-if page == "Dashboard":
-    st.title("🏠 Security Dashboard")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("Total Devices", len(st.session_state.devices), delta="2 new")
-        st.markdown('</div>', unsafe_allow_html=True)
-    with col2:
-        active_devices = len([d for d in st.session_state.devices if d['status'] == 'active'])
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("Active Devices", active_devices, delta=f"{(active_devices/len(st.session_state.devices)*100):.0f}%")
-        st.markdown('</div>', unsafe_allow_html=True)
-    with col3:
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("Active Alerts", len([a for a in st.session_state.alerts if a['severity'] in ['high', 'medium']]), delta="-1")
-        st.markdown('</div>', unsafe_allow_html=True)
-    with col4:
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("System Uptime", "99.8%", delta="0.2%")
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown("---")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("📊 Device Activity (24h)")
-        hours = [datetime.now() - timedelta(hours=i) for i in range(24, 0, -1)]
-        activity = np.random.randint(5, 50, 24)
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=hours,
-            y=activity,
-            mode='lines+markers',
-            line=dict(color='#60a5fa', width=3),
-            fill='tozeroy',
-            fillcolor='rgba(96, 165, 250, 0.2)'
-        ))
-        fig.update_layout(
-            template='plotly_dark',
-            paper_bgcolor='rgba(30, 41, 59, 0.5)',
-            plot_bgcolor='rgba(30, 41, 59, 0.5)',
-            xaxis_title="Time",
-            yaxis_title="Events",
-            height=300
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    with col2:
-        st.subheader("📈 Alert Distribution")
-        alert_types = ['Critical', 'Warning', 'Info']
-        alert_counts = [
-            len([a for a in st.session_state.alerts if a['severity'] == 'high']),
-            len([a for a in st.session_state.alerts if a['severity'] == 'medium']),
-            len([a for a in st.session_state.alerts if a['severity'] == 'low'])
-        ]
-        fig = go.Figure(data=[go.Pie(
-            labels=alert_types,
-            values=alert_counts,
-            hole=.4,
-            marker=dict(colors=['#ef4444', '#f59e0b', '#3b82f6'])
-        )])
-        fig.update_layout(
-            template='plotly_dark',
-            paper_bgcolor='rgba(30, 41, 59, 0.5)',
-            plot_bgcolor='rgba(30, 41, 59, 0.5)',
-            height=300,
-            showlegend=True
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    st.markdown("---")
-    st.subheader("🚨 Recent Alerts")
-    for alert in st.session_state.alerts[:5]:
-        severity_color = {'high': '🔴', 'medium': '🟡', 'low': '🔵'}
-        with st.expander(f"{severity_color[alert['severity']]} {alert['message']}", expanded=False):
-            st.write(f"**Timestamp:** {alert['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}")
-            st.write(f"**Severity:** {alert['severity'].upper()}")
-            st.write(f"**Type:** {alert['type']}")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Acknowledge", key=f"ack_{alert['id']}"):
-                    st.success("Alert acknowledged!")
-            with col2:
-                if st.button("Dismiss", key=f"dismiss_{alert['id']}"):
-                    st.info("Alert dismissed!")
+    fig_heat = px.bar(df_heat, x="Room", y="Activity Score", color="Activity Score",
+                      color_continuous_scale=["#00f5ff", "#ff004c"],
+                      title="Activity Heatmap (Last Hour)")
+    st.plotly_chart(fig_heat, use_container_width=True)
 
-elif page == "Devices":
-    st.title("🔧 Device Management")
-    device_types = ["All"] + list(set([d['type'] for d in st.session_state.devices]))
-    selected_type = st.selectbox("Filter by Type", device_types)
-    filtered_devices = st.session_state.devices if selected_type == "All" else [d for d in st.session_state.devices if d['type'] == selected_type]
-    cols = st.columns(3)
-    for idx, device in enumerate(filtered_devices):
-        with cols[idx % 3]:
-            status_icon = "🟢" if device['status'] == 'active' else "🔴"
-            with st.container():
-                st.markdown(f"### {status_icon} {device['name']}")
-                st.write(f"**Type:** {device['type'].title()}")
-                st.write(f"**Location:** {device['location']}")
-                battery_color = "🟢" if device['battery'] > 70 else "🟡" if device['battery'] > 30 else "🔴"
-                st.progress(device['battery'] / 100)
-                st.write(f"{battery_color} Battery: {device['battery']}%")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("Details", key=f"details_{device['id']}"):
-                        st.info(f"Showing details for {device['name']}")
-                with col2:
-                    if st.button("Configure", key=f"config_{device['id']}"):
-                        st.info(f"Configuring {device['name']}")
-                st.markdown("---")
+    # Timeline Replay (Bottom Panel)
+    st.subheader("📈 Timeline & Replay")
+    hours = pd.date_range(datetime.now() - timedelta(hours=24), periods=24, freq='H')
+    events = np.random.randint(0, 10, 24)
+    fig_timeline = go.Figure()
+    fig_timeline.add_trace(go.Scatter(x=hours, y=events, mode='lines+markers', name='Events'))
+    fig_timeline.update_layout(title="Security Event Timeline (Last 24 Hours)",
+                               xaxis_title="Time", yaxis_title="Events Count")
+    st.plotly_chart(fig_timeline, use_container_width=True)
 
-elif page == "Analytics":
-    st.title("📊 Analytics & Insights")
-    time_range = st.select_slider(
-        "Select Time Range",
-        options=["24h", "7d", "30d", "90d", "1y"],
-        value="7d"
-    )
-    st.markdown("---")
-    st.subheader("🔥 Activity Heatmap")
-    days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    hours = list(range(24))
-    z = np.random.randint(0, 50, (7, 24))
-    fig = go.Figure(data=go.Heatmap(z=z, x=hours, y=days, colorscale='Blues'))
-    fig.update_layout(
-        template='plotly_dark',
-        paper_bgcolor='rgba(30, 41, 59, 0.5)',
-        plot_bgcolor='rgba(30, 41, 59, 0.5)',
-        xaxis_title="Hour of Day",
-        yaxis_title="Day of Week",
-        height=400
-    )
-    st.plotly_chart(fig, use_container_width=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("📱 Device Response Times")
-        devices = [d['name'] for d in st.session_state.devices[:5]]
-        response_times = np.random.randint(50, 300, 5)
-        fig = go.Figure(data=[go.Bar(x=devices, y=response_times, marker_color='#60a5fa')])
-        fig.update_layout(
-            template='plotly_dark',
-            paper_bgcolor='rgba(30, 41, 59, 0.5)',
-            plot_bgcolor='rgba(30, 41, 59, 0.5)',
-            yaxis_title="Response Time (ms)",
-            height=300
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    with col2:
-        st.subheader("🔋 Battery Health")
-        devices = [d['name'] for d in st.session_state.devices[:5]]
-        battery_levels = [d['battery'] for d in st.session_state.devices[:5]]
-        fig = go.Figure(data=[go.Bar(
-            x=devices,
-            y=battery_levels,
-            marker_color=['#22c55e' if b > 70 else '#f59e0b' if b > 30 else '#ef4444' for b in battery_levels]
-        )])
-        fig.update_layout(
-            template='plotly_dark',
-            paper_bgcolor='rgba(30, 41, 59, 0.5)',
-            plot_bgcolor='rgba(30, 41, 59, 0.5)',
-            yaxis_title="Battery Level (%)",
-            height=300
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    st.info("🗣️ **AI Narration:** Between 10PM–11:30PM, an unusual Wi-Fi signal and motion were detected near the entrance.")
 
-elif page == "Alerts":
-    st.title("🚨 Alert Management")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        severity_filter = st.multiselect(
-            "Severity",
-            ["high", "medium", "low"],
-            default=["high", "medium", "low"]
-        )
-    with col2:
-        type_filter = st.multiselect(
-            "Type",
-            ["critical", "warning", "info"],
-            default=["critical", "warning", "info"]
-        )
-    with col3:
-        time_filter = st.selectbox(
-            "Time Range",
-            ["Last Hour", "Last 24 Hours", "Last Week", "All Time"]
-        )
-    st.markdown("---")
-    filtered_alerts = [a for a in st.session_state.alerts if a['severity'] in severity_filter and a['type'] in type_filter]
-    if filtered_alerts:
-        df = pd.DataFrame(filtered_alerts)
-        df['timestamp'] = df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        st.dataframe(df, use_container_width=True, height=400)
-    else:
-        st.info("No alerts match the selected filters.")
-    st.markdown("---")
-    st.subheader("📈 Alert Statistics")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Alerts", len(st.session_state.alerts))
-    with col2:
-        st.metric("Critical Alerts", len([a for a in st.session_state.alerts if a['severity'] == 'high']))
-    with col3:
-        st.metric("Resolved Today", 5, delta="3")
+# ---------- Real-Time Alerts Feed ----------
+with col2:
+    st.subheader("🚨 Real-Time Alerts")
+    placeholder = st.empty()
 
-elif page == "Settings":
-    st.title("⚙️ Settings")
-    tabs = st.tabs(["General", "Notifications", "Security", "System"])
-    with tabs[0]:
-        st.subheader("General Settings")
-        auto_refresh = st.toggle("Auto-refresh Dashboard", value=True)
-        refresh_interval = st.slider("Refresh Interval (seconds)", 1, 60, 5)
-        theme = st.selectbox("Theme", ["Dark", "Light", "Auto"])
-        language = st.selectbox("Language", ["English", "Spanish", "French", "German"])
-        if st.button("Save General Settings"):
-            st.success("Settings saved successfully!")
-    with tabs[1]:
-        st.subheader("Notification Settings")
-        email_notifications = st.toggle("Email Notifications", value=True)
-        push_notifications = st.toggle("Push Notifications", value=True)
-        st.write("**Alert Preferences**")
-        notify_critical = st.checkbox("Critical Alerts", value=True)
-        notify_warning = st.checkbox("Warning Alerts", value=True)
-        notify_info = st.checkbox("Info Alerts", value=False)
-        if st.button("Save Notification Settings"):
-            st.success("Notification settings saved!")
-    with tabs[2]:
-        st.subheader("Security Settings")
-        two_factor = st.toggle("Two-Factor Authentication", value=True)
-        auto_lock = st.toggle("Auto-lock After Inactivity", value=True)
-        lock_timeout = st.number_input("Lock Timeout (minutes)", 1, 60, 15)
-        st.write("**Password Requirements**")
-        min_length = st.number_input("Minimum Password Length", 8, 32, 12)
-        require_special = st.checkbox("Require Special Characters", value=True)
-        if st.button("Save Security Settings"):
-            st.success("Security settings saved!")
-    with tabs[3]:
-        st.subheader("System Information")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("**Version:** 2.5.1")
-            st.write("**Last Update:** 2024-01-15")
-            st.write("**Database:** Connected")
-        with col2:
-            st.write("**API Status:** Online")
-            st.write("**Backup:** Enabled")
-            st.write("**Storage:** 45% used")
-        st.markdown("---")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("Check for Updates"):
-                st.info("System is up to date!")
-        with col2:
-            if st.button("Export Data"):
-                st.info("Data export started...")
-        with col3:
-            if st.button("Clear Cache"):
-                st.success("Cache cleared!")
+    for _ in range(3):
+        alerts = [generate_alert() for _ in range(random.randint(1, 3))]
+        with placeholder.container():
+            for a in alerts:
+                color = "#ff4d4d" if a["Threat"] == "High" else "#ffaa00" if a["Threat"] == "Medium" else "#00ffcc"
+                st.markdown(
+                    f"""
+                    <div style="background-color:#111;padding:10px;border-radius:10px;margin-bottom:10px;">
+                        <b style="color:{color}">[{a['Threat']}]</b> {a['Title']}  
+                        <br><small>🕒 {a['Time']} | 📍 {a['Location']}</small>
+                        <br>{a['Description']}
+                        <div style="margin-top:8px;">
+                            <button style="background:#2563eb;color:white;border:none;padding:4px 8px;border-radius:5px;margin-right:4px;">Verify</button>
+                            <button style="background:#374151;color:white;border:none;padding:4px 8px;border-radius:5px;">Ignore</button>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+        time.sleep(1)
 
+# ---------- Analytics Section ----------
 st.markdown("---")
-st.markdown(
-    """
-    <div style='text-align: center; color: #64748b;'>
-        <p>SentinelSphere IoT Security Dashboard v2.5.1</p>
-        <p>© 2024 SentinelSphere. All rights reserved.</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.header("📊 Security Analytics & Reports")
+
+colA, colB, colC = st.columns(3)
+
+with colA:
+    trend_data = pd.DataFrame({
+        "Day": [f"Day {i}" for i in range(1, 8)],
+        "Threat Score": np.random.randint(50, 100, 7)
+    })
+    fig_trend = px.line(trend_data, x="Day", y="Threat Score", title="Weekly Security Trend")
+    st.plotly_chart(fig_trend, use_container_width=True)
+
+with colB:
+    freq_data = pd.DataFrame({
+        "Room": rooms,
+        "Events": np.random.randint(1, 10, len(rooms))
+    })
+    fig_bar = px.bar(freq_data, x="Room", y="Events", title="Event Frequency by Room")
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+with colC:
+    pie_data = pd.DataFrame({
+        "Response": ["Confirmed", "False Alarm", "Ignored"],
+        "Count": [random.randint(5, 15) for _ in range(3)]
+    })
+    fig_pie = px.pie(pie_data, values="Count", names="Response", title="User Response Metrics")
+    st.plotly_chart(fig_pie, use_container_width=True)
+
+# ---------- Community Watch ----------
+st.markdown("---")
+st.header("🌐 Community Watch (Anonymous)")
+
+map_data = pd.DataFrame({
+    "lat": [19.07 + random.uniform(-0.01, 0.01) for _ in range(10)],
+    "lon": [72.87 + random.uniform(-0.01, 0.01) for _ in range(10)],
+    "ThreatLevel": np.random.randint(20, 100, 10)
+})
+fig_map = px.density_mapbox(map_data, lat='lat', lon='lon', z='ThreatLevel', radius=20,
+                            center=dict(lat=19.07, lon=72.87), zoom=12,
+                            mapbox_style="stamen-toner",
+                            title="Neighborhood Threat Heatmap")
+st.plotly_chart(fig_map, use_container_width=True)
+
+st.success("✅ SentinelSphere AI Dashboard Simulation Running Successfully!")
