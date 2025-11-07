@@ -6,7 +6,6 @@ import numpy as np
 from streamlit_autorefresh import st_autorefresh
 
 # ---------- Backend functions (device and alert simulation) -----------
-
 def get_devices():
     np.random.seed()
     return [
