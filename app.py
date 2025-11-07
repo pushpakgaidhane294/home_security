@@ -56,7 +56,7 @@ def generate_alert():
         "Title": title,
         "Location": random.choice(locations),
         "Threat": threat,
-        "Description": f"{title} in {locations[random.randint(0,4)]}. Threat level: {threat}."
+        "Description": f"{title} in {random.choice(locations)}. Threat level: {threat}."
     }
 
 # ---------- Layout ----------
@@ -66,7 +66,6 @@ col1, col2 = st.columns([2, 1])
 with col1:
     st.subheader("🏠 Home Digital Twin — 3D View")
 
-    # 3D coordinates for rooms
     rooms_3d = [
         {"Room": "Living Room", "x": 0, "y": 0, "z": 0},
         {"Room": "Kitchen", "x": 4, "y": 0, "z": 0},
@@ -86,25 +85,30 @@ with col1:
             text=df_3d["Room"],
             textposition="top center",
             marker=dict(
-                size=14,
+                size=18,
                 color=df_3d["Activity"],
-                colorscale="Turbo",
-                opacity=0.9,
-                colorbar=dict(title="Activity Level")
+                colorscale="Electric",
+                opacity=0.95,
+                line=dict(color='white', width=2),
+                colorbar=dict(title="Activity Level", tickfont=dict(color='white'))
             )
         )
     ])
 
     fig_3d.update_layout(
-        title="3D Digital Twin — Interactive Home Layout",
+        title="3D Digital Twin — Smart Home Layout",
         scene=dict(
             xaxis_title='Width',
             yaxis_title='Depth',
             zaxis_title='Height',
+            xaxis=dict(showbackground=True, backgroundcolor='rgba(0,50,100,0.3)', gridcolor='gray'),
+            yaxis=dict(showbackground=True, backgroundcolor='rgba(0,100,50,0.3)', gridcolor='gray'),
+            zaxis=dict(showbackground=True, backgroundcolor='rgba(50,0,100,0.3)', gridcolor='gray'),
             bgcolor='black'
         ),
-        paper_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(10,10,30,1)',
         font=dict(color='white'),
+        margin=dict(l=0, r=0, t=40, b=0),
         height=500
     )
 
@@ -116,7 +120,7 @@ with col1:
     heat_values = np.random.randint(20, 100, len(rooms))
     df_heat = pd.DataFrame({"Room": rooms, "Activity Score": heat_values})
     fig_heat = px.bar(df_heat, x="Room", y="Activity Score", color="Activity Score",
-                      color_continuous_scale=["#00f5ff", "#ff004c"])
+                      color_continuous_scale="Viridis", title="Room Activity Levels")
     st.plotly_chart(fig_heat, use_container_width=True)
 
     # Timeline Replay
@@ -124,9 +128,13 @@ with col1:
     hours = pd.date_range(datetime.now() - timedelta(hours=24), periods=24, freq='H')
     events = np.random.randint(0, 10, 24)
     fig_timeline = go.Figure()
-    fig_timeline.add_trace(go.Scatter(x=hours, y=events, mode='lines+markers', name='Events'))
-    fig_timeline.update_layout(title="Security Event Timeline (Last 24 Hours)",
-                               xaxis_title="Time", yaxis_title="Events Count")
+    fig_timeline.add_trace(go.Scatter(x=hours, y=events, mode='lines+markers', name='Events', line=dict(width=3)))
+    fig_timeline.update_layout(
+        title="Security Event Timeline (Last 24 Hours)",
+        xaxis_title="Time",
+        yaxis_title="Events Count",
+        template="plotly_dark"
+    )
     st.plotly_chart(fig_timeline, use_container_width=True)
 
     st.info("🗣️ **AI Narration:** Between 10PM–11:30PM, an unusual Wi-Fi signal and motion were detected near the entrance.")
@@ -139,7 +147,7 @@ with col2:
     for _ in range(3):
         alerts = [generate_alert() for _ in range(random.randint(1, 3))]
         with placeholder.container():
-            for a in alerts:
+            for idx, a in enumerate(alerts):
                 color = "#ff4d4d" if a["Threat"] == "High" else "#ffaa00" if a["Threat"] == "Medium" else "#00ffcc"
                 st.markdown(
                     f"<div style='background-color:#111;padding:10px;border-radius:10px;margin-bottom:10px;'>"
@@ -149,11 +157,12 @@ with col2:
                     unsafe_allow_html=True,
                 )
                 col_btn1, col_btn2 = st.columns(2)
+                unique_key = f"{a['Title']}_{a['Location']}_{idx}_{random.randint(0,9999)}"
                 with col_btn1:
-                    if st.button(f"✅ Verify - {a['Title']}", key=f"verify_{a['Time']}"):
+                    if st.button("✅ Verify", key=f"verify_{unique_key}"):
                         st.success(f"Verified: {a['Title']} ({a['Location']})")
                 with col_btn2:
-                    if st.button(f"🚫 Ignore - {a['Title']}", key=f"ignore_{a['Time']}"):
+                    if st.button("🚫 Ignore", key=f"ignore_{unique_key}"):
                         st.warning(f"Ignored: {a['Title']} ({a['Location']})")
         time.sleep(1)
 
@@ -168,7 +177,7 @@ with colA:
         "Day": [f"Day {i}" for i in range(1, 8)],
         "Threat Score": np.random.randint(50, 100, 7)
     })
-    fig_trend = px.line(trend_data, x="Day", y="Threat Score", title="Weekly Security Trend")
+    fig_trend = px.line(trend_data, x="Day", y="Threat Score", title="Weekly Security Trend", markers=True)
     st.plotly_chart(fig_trend, use_container_width=True)
 
 with colB:
@@ -176,7 +185,8 @@ with colB:
         "Room": rooms,
         "Events": np.random.randint(1, 10, len(rooms))
     })
-    fig_bar = px.bar(freq_data, x="Room", y="Events", title="Event Frequency by Room")
+    fig_bar = px.bar(freq_data, x="Room", y="Events", title="Event Frequency by Room", color="Events",
+                     color_continuous_scale="Plasma")
     st.plotly_chart(fig_bar, use_container_width=True)
 
 with colC:
@@ -204,7 +214,7 @@ fig_map = px.density_mapbox(
     radius=25,
     center=dict(lat=19.07, lon=72.87),
     zoom=12,
-    mapbox_style="open-street-map",
+    mapbox_style="carto-darkmatter",
     title="Neighborhood Threat Heatmap"
 )
 st.plotly_chart(fig_map, use_container_width=True)
