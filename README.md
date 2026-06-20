@@ -126,10 +126,9 @@ streamlit run app.py
 **Aman Kshirsagar**
 
 * GitHub: https://github.com/Amank0704
-* LinkedIn: *(Add your LinkedIn profile)*
 
 ---
 
 ## 📄 License
 
-This project is intended for educational and portfolio purposes.
+This project is intended for educational and portfolio purpose.
